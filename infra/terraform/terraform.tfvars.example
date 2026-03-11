@@ -27,7 +27,27 @@ unauthorized_regions = "Sanctioned,Restricted"
 unauthorized_channels = "External,Public"
 
 # Network Configuration
+# Option 1: Create a new VPC (default)
+use_existing_vpc = false
 vpc_cidr = "10.0.0.0/16"
+
+# Option 2: Use an existing VPC
+# Set use_existing_vpc = true and provide the following:
+# use_existing_vpc = true
+# existing_vpc_id = "vpc-xxxxxxxxxxxxxxxxx"
+# existing_public_subnet_ids = ["subnet-public1", "subnet-public2"]
+# existing_private_subnet_ids = ["subnet-private1", "subnet-private2"]
+#
+# Requirements for existing VPC:
+# - DNS Support enabled
+# - DNS Hostnames enabled
+# - At least 2 public subnets in different AZs
+# - At least 2 private subnets in different AZs
+# - Internet Gateway attached
+# - NAT Gateway(s) for private subnet internet access
+# - Public subnets tagged with: kubernetes.io/role/elb = 1
+# - Private subnets tagged with: kubernetes.io/role/internal-elb = 1
+
 availability_zones = ["us-east-1a", "us-east-1b"]
 
 # EKS Configuration

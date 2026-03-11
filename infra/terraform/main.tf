@@ -26,8 +26,9 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# VPC Module
+# VPC Module (conditional - only create if not using existing)
 module "vpc" {
+  count  = var.use_existing_vpc ? 0 : 1
   source = "./modules/vpc"
   
   project_name = var.project_name
@@ -42,8 +43,8 @@ module "eks" {
   
   project_name        = var.project_name
   environment         = var.environment
-  vpc_id              = module.vpc.vpc_id
-  private_subnet_ids  = module.vpc.private_subnet_ids
+  vpc_id              = local.vpc_id
+  private_subnet_ids  = local.private_subnet_ids
   eks_cluster_version = var.eks_cluster_version
 }
 
@@ -53,8 +54,8 @@ module "rds" {
   
   project_name       = var.project_name
   environment        = var.environment
-  vpc_id             = module.vpc.vpc_id
-  private_subnet_ids = module.vpc.private_subnet_ids
+  vpc_id             = local.vpc_id
+  private_subnet_ids = local.private_subnet_ids
   db_username        = var.db_username
   db_password        = var.db_password
   db_name            = var.db_name
@@ -70,8 +71,8 @@ module "tier3_ec2" {
   project_name       = var.project_name
   environment        = var.environment
   name_suffix        = "tier3-risk-analysis"
-  vpc_id             = module.vpc.vpc_id
-  subnet_id          = module.vpc.public_subnet_ids[0]
+  vpc_id             = local.vpc_id
+  subnet_id          = local.public_subnet_ids[0]
   instance_type      = var.tier3_instance_type
   user_data_template = file("${path.module}/userdata/tier3-userdata.sh")
   user_data_vars = {
@@ -85,7 +86,7 @@ module "tier3_ec2" {
       from_port   = 8000
       to_port     = 8000
       protocol    = "tcp"
-      cidr_blocks = [var.vpc_cidr]
+      cidr_blocks = [local.vpc_cidr]
       description = "Allow HTTP from VPC"
     },
     {
@@ -105,8 +106,8 @@ module "tier5_ec2" {
   project_name       = var.project_name
   environment        = var.environment
   name_suffix        = "tier5-loan-finalizer"
-  vpc_id             = module.vpc.vpc_id
-  subnet_id          = module.vpc.public_subnet_ids[0]
+  vpc_id             = local.vpc_id
+  subnet_id          = local.public_subnet_ids[0]
   instance_type      = var.tier5_instance_type
   user_data_template = file("${path.module}/userdata/tier5-userdata.sh")
   user_data_vars = {

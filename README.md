@@ -68,7 +68,8 @@ A complete, production-ready demonstration application showcasing **Dynatrace Bu
 
 ### Infrastructure
 
-- **VPC**: 10.0.0.0/16 with 2 AZs, public/private subnets, NAT gateways
+- **VPC**: Create new (10.0.0.0/16) or use existing VPC with validation
+- **Deployment Modes**: Create new VPC or reuse existing (with automated validation)
 - **EKS**: Kubernetes 1.28 cluster with managed node groups (t3.medium)
 - **EC2**: 2 instances (t3.small) for Tier 3 and Tier 5
 - **RDS**: PostgreSQL 15.4 (db.t3.micro) for loan storage
@@ -85,10 +86,30 @@ A complete, production-ready demonstration application showcasing **Dynatrace Bu
 - Dynatrace environment with API & PaaS tokens
 
 ### 1. Deploy Infrastructure
+
+#### Option A: Create New VPC (Default)
 ```bash
 cd infra/terraform
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your values
+# Edit terraform.tfvars with your values (use_existing_vpc = false)
+terraform init
+terraform apply
+```
+
+#### Option B: Use Existing VPC
+```bash
+# First, validate your existing VPC
+./scripts/validate-vpc.sh vpc-xxxxxxxxxxxxx us-east-1
+
+# Update terraform.tfvars with validation output
+cd infra/terraform
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars:
+#   use_existing_vpc = true
+#   existing_vpc_id = "vpc-xxxxx"
+#   existing_public_subnet_ids = [...]
+#   existing_private_subnet_ids = [...]
+
 terraform init
 terraform apply
 ```

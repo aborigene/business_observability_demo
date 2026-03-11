@@ -1,6 +1,21 @@
 output "vpc_id" {
   description = "VPC ID"
-  value       = module.vpc.vpc_id
+  value       = local.vpc_id
+}
+
+output "vpc_source" {
+  description = "Whether VPC was created or existing was used"
+  value       = var.use_existing_vpc ? "existing" : "created"
+}
+
+output "public_subnet_ids" {
+  description = "Public subnet IDs"
+  value       = local.public_subnet_ids
+}
+
+output "private_subnet_ids" {
+  description = "Private subnet IDs"
+  value       = local.private_subnet_ids
 }
 
 output "eks_cluster_name" {

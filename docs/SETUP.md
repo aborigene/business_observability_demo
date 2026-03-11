@@ -81,7 +81,67 @@ unauthorized_regions = "Sanctioned,Restricted"
 unauthorized_channels = "External,Public"
 ```
 
-### 1.3 Initialize and Deploy
+### 1.3 Using an Existing VPC (Optional)
+
+If you already have a VPC in your AWS account and want to use it instead of creating a new one, follow these steps:
+
+#### Step 1: Validate Your VPC
+
+Run the VPC validation script to check if your VPC meets all requirements:
+
+```bash
+cd ../../scripts
+./validate-vpc.sh vpc-xxxxxxxxxxxxx us-east-1
+```
+
+The script will check for:
+- DNS Support enabled
+- DNS Hostnames enabled
+- At least 2 public subnets in different AZs
+- At least 2 private subnets in different AZs
+- Internet Gateway attached
+- NAT Gateway(s) for private subnet internet access
+- Proper EKS subnet tags
+
+If validation passes, the script will output the required configuration for your `terraform.tfvars`.
+
+#### Step 2: Update terraform.tfvars
+
+In your `terraform.tfvars`, set:
+
+```hcl
+# Use existing VPC instead of creating new one
+use_existing_vpc = true
+existing_vpc_id = "vpc-xxxxxxxxxxxxx"
+existing_public_subnet_ids = ["subnet-pub1", "subnet-pub2"]
+existing_private_subnet_ids = ["subnet-priv1", "subnet-priv2"]
+```
+
+**Note:** The `vpc_cidr` variable is ignored when `use_existing_vpc = true`.
+
+#### VPC Requirements
+
+Your existing VPC must have:
+
+| Requirement | Description |
+|------------|-------------|
+| DNS Support | Must be enabled for EKS |
+| DNS Hostnames | Must be enabled for EKS |
+| Public Subnets | At least 2 in different AZs |
+| Private Subnets | At least 2 in different AZs |
+| Internet Gateway | Must be attached to VPC |
+| NAT Gateway(s) | Required for private subnet internet access |
+| Public Subnet Tag | `kubernetes.io/role/elb = 1` |
+| Private Subnet Tag | `kubernetes.io/role/internal-elb = 1` |
+
+#### Benefits of Using Existing VPC
+
+- Reuse existing network infrastructure
+- Avoid VPC limits (5 VPCs per region by default)
+- Integrate with existing networking setup
+- Use established security groups and NACLs
+
+### 1.4 Initialize and Deploy
 ```bash
 # Initialize Terraform
 terraform init
@@ -93,7 +153,9 @@ terraform plan
 terraform apply
 ```
 
-### 1.4 Save Outputs
+**Note**: If using an existing VPC, Terraform will validate it during the apply phase. Any validation errors will stop the deployment with helpful error messages.
+
+### 1.5 Save Outputs
 ```bash
 # Get important outputs
 terraform output -raw kubeconfig_command > /tmp/kubeconfig.sh

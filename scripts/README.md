@@ -4,6 +4,44 @@ This directory contains automation scripts for deploying the Dynatrace Business 
 
 ## Scripts Overview
 
+### validate-vpc.sh
+Validates that an existing AWS VPC meets all requirements for the demo deployment.
+
+**Usage:**
+```bash
+./scripts/validate-vpc.sh <vpc-id> [region]
+```
+
+**Example:**
+```bash
+./scripts/validate-vpc.sh vpc-0123456789abcdef us-east-1
+```
+
+**Prerequisites:**
+- AWS CLI configured
+- `jq` installed (for JSON parsing)
+
+**Checks Performed:**
+- VPC exists and is accessible
+- DNS Support enabled
+- DNS Hostnames enabled
+- At least 2 public subnets in different Availability Zones
+- At least 2 private subnets in different Availability Zones
+- Internet Gateway attached to VPC
+- NAT Gateway(s) present for private subnet internet access
+- Proper EKS subnet tags (`kubernetes.io/role/elb` and `kubernetes.io/role/internal-elb`)
+
+**Output:**
+- Detailed validation report with pass/fail status
+- Configuration values for `terraform.tfvars`
+- Remediation commands for any issues found
+
+**Exit Codes:**
+- `0`: Validation passed
+- `1`: Validation failed
+
+---
+
 ### build-images.sh
 Builds all Docker images for Kubernetes services (Tier 1, 2, 4).
 

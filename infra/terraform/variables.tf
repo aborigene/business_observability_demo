@@ -17,9 +17,34 @@ variable "environment" {
 }
 
 variable "vpc_cidr" {
-  description = "CIDR block for VPC"
+  description = "CIDR block for VPC (only used when create_vpc = true)"
   type        = string
   default     = "10.0.0.0/16"
+}
+
+# Existing VPC Configuration
+variable "use_existing_vpc" {
+  description = "Whether to use an existing VPC instead of creating a new one"
+  type        = bool
+  default     = false
+}
+
+variable "existing_vpc_id" {
+  description = "ID of existing VPC to use (required if use_existing_vpc = true)"
+  type        = string
+  default     = ""
+}
+
+variable "existing_public_subnet_ids" {
+  description = "List of existing public subnet IDs (required if use_existing_vpc = true)"
+  type        = list(string)
+  default     = []
+}
+
+variable "existing_private_subnet_ids" {
+  description = "List of existing private subnet IDs (required if use_existing_vpc = true)"
+  type        = list(string)
+  default     = []
 }
 
 variable "eks_cluster_version" {
