@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tier1-config
+  namespace: loan-app
+data:
+  TIER2_URL: "http://tier2-service:8080"
+  NODE_ENV: "production"
+  LOG_LEVEL: "info"

@@ -1,0 +1,22 @@
+[Unit]
+Description=Loan Risk Analysis Engine (Tier 3 - C Legacy)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/loan-risk-engine
+ExecStart=/opt/loan-risk-engine/loan-risk-server
+Restart=always
+RestartSec=5
+
+# Environment variables
+Environment="TIER4_HOST=tier4-service"
+Environment="TIER4_PORT=8001"
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

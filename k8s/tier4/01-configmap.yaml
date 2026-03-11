@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tier4-config
+  namespace: loan-app
+data:
+  TIER5_URL: "http://TIER5_EC2_PRIVATE_IP:5000"  # Replace with actual EC2 private IP
+  APPROVAL_THRESHOLD: "60"
+  REJECTION_THRESHOLD: "40"

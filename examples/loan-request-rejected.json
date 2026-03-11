@@ -1,0 +1,14 @@
+{
+  "applicationId": "LOAN-2024-002",
+  "customerId": "CUST-67890",
+  "requestedAmount": 50000,
+  "term": 60,
+  "costCenter": "commercial-banking",
+  "team": "personal-loan-team",
+  "segment": "commercial",
+  "channel": "Branch",
+  "product": "PersonalLoan",
+  "region": "Europe",
+  "officeId": "LON-005",
+  "agentId": "AGT-456"
+}

@@ -1,0 +1,58 @@
+# Terraform Variables Example
+# Copy this file to terraform.tfvars and fill in your actual values
+
+# AWS Configuration
+aws_region = "us-east-1"
+project_name = "dynatrace-bo-demo"
+
+# Database Configuration
+db_username = "loanadmin"
+db_password = "CHANGEME_SecurePassword123!"  # Use a secure password
+db_name = "loandb"
+
+# Dynatrace Configuration
+# Get these from your Dynatrace environment
+dt_env_url = "https://your-environment-id.live.dynatrace.com"
+dt_paas_token = "dt0c01.YOUR_PAAS_TOKEN_HERE"  # PaaS token for OneAgent installation
+dt_api_token = "dt0c01.YOUR_API_TOKEN_HERE"    # API token for Business Events (requires bizevents.ingest scope)
+
+# Application Configuration
+base_rate = "0.05"  # 5% base interest rate
+approval_threshold = "60"
+rejection_threshold = "40"
+
+# Authorization Configuration (Tier 1)
+# Comma-separated lists (no spaces)
+unauthorized_regions = "Sanctioned,Restricted"
+unauthorized_channels = "External,Public"
+
+# Network Configuration
+vpc_cidr = "10.0.0.0/16"
+availability_zones = ["us-east-1a", "us-east-1b"]
+
+# EKS Configuration
+eks_version = "1.28"
+eks_node_instance_type = "t3.medium"
+eks_node_desired_size = 2
+eks_node_min_size = 2
+eks_node_max_size = 4
+
+# EC2 Configuration
+tier3_instance_type = "t3.small"
+tier5_instance_type = "t3.small"
+
+# RDS Configuration
+rds_instance_class = "db.t3.micro"
+rds_allocated_storage = 20
+
+# Tier Service URLs (internal)
+tier3_port = "8000"
+tier4_port = "8001"
+
+# Tags
+tags = {
+  Project     = "Dynatrace Business Observability Demo"
+  ManagedBy   = "Terraform"
+  Environment = "demo"
+  CostCenter  = "engineering"
+}

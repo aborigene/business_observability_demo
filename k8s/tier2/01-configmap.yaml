@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tier2-config
+  namespace: loan-app
+data:
+  TIER3_URL: "http://TIER3_EC2_PRIVATE_IP:8000"  # Replace with actual EC2 private IP
+  SERVER_PORT: "8080"
+  SPRING_PROFILES_ACTIVE: "production"

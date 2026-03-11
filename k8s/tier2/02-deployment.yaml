@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tier2-credit-analysis
+  namespace: loan-app
+  labels:
+    app: tier2
+    tier: backend
+    component: credit-analysis
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tier2
+  template:
+    metadata:
+      labels:
+        app: tier2
+        tier: backend
+        component: credit-analysis
+        version: v1
+    spec:
+      containers:
+      - name: credit-analysis
+        image: YOUR_ECR_REGISTRY/tier2-credit-analysis:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: SERVER_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: tier2-config
+              key: SERVER_PORT
+        - name: TIER3_URL
+          valueFrom:
+            configMapKeyRef:
+              name: tier2-config
+              key: TIER3_URL
+        - name: SPRING_PROFILES_ACTIVE
+          valueFrom:
+            configMapKeyRef:
+              name: tier2-config
+              key: SPRING_PROFILES_ACTIVE
+        - name: JAVA_OPTS
+          value: "-Xms256m -Xmx512m -XX:+UseG1GC"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tier2-service
+  namespace: loan-app
+  labels:
+    app: tier2
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: tier2

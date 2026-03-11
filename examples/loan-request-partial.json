@@ -1,0 +1,14 @@
+{
+  "applicationId": "LOAN-2024-003",
+  "customerId": "CUST-11111",
+  "requestedAmount": 50000,
+  "term": 48,
+  "costCenter": "retail-banking",
+  "team": "auto-loan-team",
+  "segment": "retail",
+  "channel": "Web",
+  "product": "AutoLoan",
+  "region": "NorthAmerica",
+  "officeId": "NYC-001",
+  "agentId": "AGT-123"
+}

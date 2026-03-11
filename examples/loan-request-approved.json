@@ -1,0 +1,14 @@
+{
+  "applicationId": "LOAN-2024-001",
+  "customerId": "CUST-12345",
+  "requestedAmount": 50000,
+  "term": 60,
+  "costCenter": "retail-banking",
+  "team": "mortgage-team",
+  "segment": "retail",
+  "channel": "Mobile",
+  "product": "HomeLoan",
+  "region": "NorthAmerica",
+  "officeId": "NYC-001",
+  "agentId": "AGT-789"
+}

@@ -1,0 +1,14 @@
+{
+  "applicationId": "LOAN-2024-005",
+  "customerId": "CUST-99999",
+  "requestedAmount": 250000,
+  "term": 120,
+  "costCenter": "wealth-management",
+  "team": "mortgage-team",
+  "segment": "premium",
+  "channel": "Advisor",
+  "product": "JumboLoan",
+  "region": "NorthAmerica",
+  "officeId": "NYC-001",
+  "agentId": "AGT-555"
+}

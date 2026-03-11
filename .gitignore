@@ -1,0 +1,87 @@
+# Dynatrace tokens and sensitive data
+terraform.tfvars
+*.tfvars
+!terraform.tfvars.example
+.env
+*.env
+!.env.example
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+tfplan
+
+# Build artifacts
+*/publish/
+*/bin/
+*/obj/
+*/target/
+*/node_modules/
+*/dist/
+*/build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Docker
+.dockerignore
+
+# AWS
+.aws/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+venv/
+env/
+
+# Java
+*.class
+*.jar
+*.war
+!gradle-wrapper.jar
+.gradle/
+build/
+
+# .NET
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.user
+*.userosscache
+*.sln.docstates
+
+# Node
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup

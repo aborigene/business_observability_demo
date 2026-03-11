@@ -1,0 +1,14 @@
+{
+  "applicationId": "LOAN-2024-004",
+  "customerId": "CUST-00000",
+  "requestedAmount": 100000,
+  "term": 60,
+  "costCenter": "retail-banking",
+  "team": "mortgage-team",
+  "segment": "retail",
+  "channel": "Mobile",
+  "product": "HomeLoan",
+  "region": "Sanctioned",
+  "officeId": "BLOCKED-001",
+  "agentId": "AGT-999"
+}
