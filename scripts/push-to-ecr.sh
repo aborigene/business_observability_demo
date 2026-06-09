@@ -44,14 +44,12 @@ create_repo_if_not_exists() {
     local repo_name=$1
     
     echo -e "${YELLOW}Checking repository: $repo_name${NC}"
-    
-    aws ecr describe-repositories --repository-names $repo_name --region ${AWS_REGION:-us-east-1} > /dev/null 2>&1
-    
-    if [ $? -ne 0 ]; then
+
+    if ! aws ecr describe-repositories --repository-names "$repo_name" --region "${AWS_REGION:-us-east-1}" > /dev/null 2>&1; then
         echo -e "${YELLOW}Creating repository: $repo_name${NC}"
         aws ecr create-repository \
-            --repository-name $repo_name \
-            --region ${AWS_REGION:-us-east-1} \
+            --repository-name "$repo_name" \
+            --region "${AWS_REGION:-us-east-1}" \
             --image-scanning-configuration scanOnPush=true
         echo -e "${GREEN}✓ Repository created${NC}"
     else
@@ -67,19 +65,13 @@ push_image() {
     echo -e "${YELLOW}Pushing $image_name...${NC}"
     
     $CONTAINER_TOOL push "$ECR_REGISTRY/$image_name:latest"
-    
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓ Successfully pushed $image_name:latest${NC}"
-        
-        # Also push timestamped tag if it exists
-        TIMESTAMP_TAG=$($CONTAINER_TOOL images "$ECR_REGISTRY/$image_name" --format "{{.Tag}}" | grep -v latest | head -1)
-        if [ ! -z "$TIMESTAMP_TAG" ]; then
-            $CONTAINER_TOOL push "$ECR_REGISTRY/$image_name:$TIMESTAMP_TAG"
-            echo -e "${GREEN}✓ Successfully pushed $image_name:$TIMESTAMP_TAG${NC}"
-        fi
-    else
-        echo -e "${RED}✗ Failed to push $image_name${NC}"
-        return 1
+    echo -e "${GREEN}✓ Successfully pushed $image_name:latest${NC}"
+
+    # Also push timestamped tag if it exists
+    TIMESTAMP_TAG=$($CONTAINER_TOOL images "$ECR_REGISTRY/$image_name" --format "{{.Tag}}" | grep -v latest | head -1)
+    if [ -n "$TIMESTAMP_TAG" ]; then
+        $CONTAINER_TOOL push "$ECR_REGISTRY/$image_name:$TIMESTAMP_TAG"
+        echo -e "${GREEN}✓ Successfully pushed $image_name:$TIMESTAMP_TAG${NC}"
     fi
 }
 
