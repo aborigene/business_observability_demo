@@ -23,6 +23,16 @@ BUILD_PLATFORM=${BUILD_PLATFORM:-linux/amd64}
 echo -e "${GREEN}Container tool : $CONTAINER_TOOL${NC}"
 echo -e "${GREEN}Build platform : $BUILD_PLATFORM${NC}"
 
+# Tool-specific flags:
+#   Podman  - --layers enables layer caching across builds
+#   Docker  - DOCKER_BUILDKIT=1 enables BuildKit (required for --mount=type=cache in RUN steps)
+if [ "$CONTAINER_TOOL" = "podman" ]; then
+    EXTRA_BUILD_FLAGS="--layers"
+else
+    export DOCKER_BUILDKIT=1
+    EXTRA_BUILD_FLAGS=""
+fi
+
 # Ensure podman machine is running on macOS
 if [ "$CONTAINER_TOOL" = "podman" ] && [[ "$OSTYPE" == "darwin"* ]]; then
     if ! podman machine inspect >/dev/null 2>&1; then
@@ -60,7 +70,7 @@ build_image() {
         return 1
     fi
 
-    $CONTAINER_TOOL build --platform "$BUILD_PLATFORM" --layers --progress plain -t "$ECR_REGISTRY/$image_name:latest" .
+    $CONTAINER_TOOL build --platform "$BUILD_PLATFORM" $EXTRA_BUILD_FLAGS --progress plain -t "$ECR_REGISTRY/$image_name:latest" .
 
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✓ Successfully built $service (${BUILD_PLATFORM})${NC}"

@@ -1,0 +1,32 @@
+version: 0.2
+
+env:
+  variables:
+    CONTAINER_TOOL: "docker"
+    BUILD_PLATFORM: "linux/amd64"
+
+phases:
+  pre_build:
+    commands:
+      - echo "Logging in to Amazon ECR..."
+      - AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - export ECR_REGISTRY=$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
+      - export AWS_REGION=$AWS_DEFAULT_REGION
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+      - chmod +x scripts/*.sh
+
+  build:
+    commands:
+      - echo "Building all images..."
+      - ./scripts/build-images.sh
+
+  post_build:
+    commands:
+      - echo "Pushing images to ECR..."
+      - ./scripts/push-to-ecr.sh
+
+cache:
+  paths:
+    - '/root/.nuget/packages/**/*'
+    - '/root/.m2/**/*'
+    - '/root/.npm/**/*'

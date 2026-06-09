@@ -106,3 +106,9 @@ variable "dt_api_token" {
   type        = string
   sensitive   = true
 }
+
+# CodeBuild variables
+variable "github_repo_url" {
+  description = "Public GitHub repository URL for CodeBuild source (e.g. https://github.com/owner/repo.git)"
+  type        = string
+}

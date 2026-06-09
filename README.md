@@ -7,11 +7,11 @@ A complete, production-ready demonstration application showcasing **Dynatrace Bu
 - ✅ **5-Tier Application** in different languages (Node.js, Java, C, Python, .NET)
 - ✅ **Distributed Tracing** with W3C Trace Context propagation
 - ✅ **Business Events API** for business-level observability  
-- ✅ **Hybrid Infrastructure** (Kubernetes + EC2)
+- ✅ **Kubernetes-First Infrastructure** (all tiers on EKS Fargate)
 - ✅ **Multiple Monitoring Modes** (full-stack, infrastructure-only, API-based)
 - ✅ **Cost Allocation** by business units (team, cost center, segment)
 - ✅ **Database Monitoring** with Entity Framework Core
-- ✅ **Legacy App Monitoring** (C application without code changes)
+- ✅ **Legacy App Monitoring** (C application containerized without code changes)
 
 ## 🏗️ Architecture
 
@@ -34,7 +34,7 @@ A complete, production-ready demonstration application showcasing **Dynatrace Bu
 │               ↓                                                     │
 │   ┌───────────────────────────┐                                   │
 │   │ Tier 3: C Legacy App      │  Advanced Risk Analysis            │
-│   │ EC2 + OneAgent (Infra)    │  Generates tier3Score (0-30)       │
+│   │ Kubernetes + OneAgent     │  Generates tier3Score (0-30)       │
 │   └───────────┬───────────────┘  Only for amounts >= $10,000      │
 │               ↓                                                     │
 │   ┌───────────────────────────┐                                   │
@@ -44,7 +44,7 @@ A complete, production-ready demonstration application showcasing **Dynatrace Bu
 │               ↓                                                     │
 │   ┌───────────────────────────┐                                   │
 │   │ Tier 5: .NET 8 API        │  Loan Calculation & Persistence    │
-│   │ EC2 + OneAgent            │  Entity Framework Core             │
+│   │ Kubernetes + OneAgent     │  Entity Framework Core             │
 │   └───────────┬───────────────┘                                   │
 │               ↓                                                     │
 │   ┌───────────────────────────┐                                   │
@@ -62,16 +62,16 @@ A complete, production-ready demonstration application showcasing **Dynatrace Bu
 |------|------------|----------------|------------|---------|
 | **Tier 1** | Node.js Express | EKS (Kubernetes) | OneAgent Full-Stack | Authorization & Validation |
 | **Tier 2** | Java Spring Boot 3.2 | EKS (Kubernetes) | OneAgent Full-Stack | Initial Credit Scoring (0-70) |
-| **Tier 3** | C (Raw HTTP) | EC2 | OneAgent Infrastructure-Only | Advanced Risk Analysis (0-30) |
+| **Tier 3** | C (Raw HTTP) | EKS (Kubernetes) | OneAgent Full-Stack | Advanced Risk Analysis (0-30) |
 | **Tier 4** | Python FastAPI | EKS (Kubernetes) | Business Events API | Decision Engine + Business Events |
-| **Tier 5** | .NET 8 Minimal API | EC2 | OneAgent Full-Stack | Loan Calculation & DB Persistence |
+| **Tier 5** | .NET 8 Minimal API | EKS (Kubernetes) | OneAgent Full-Stack | Loan Calculation & DB Persistence |
 
 ### Infrastructure
 
 - **VPC**: Create new (10.0.0.0/16) or use existing VPC with validation
-- **EKS**: Create new Kubernetes 1.28 cluster with managed node groups (t3.medium), or use an existing cluster
-- **EC2**: 2 instances (t3.small) for Tier 3 and Tier 5
+- **EKS**: Create new Kubernetes 1.28 cluster or use an existing cluster (EKS Fargate, `linux/amd64`)
 - **RDS**: PostgreSQL 15 (db.t3.micro) for loan storage
+- **CodeBuild**: Builds and pushes all Docker images to ECR (native `linux/amd64`, no local cross-compilation needed)
 - **Terraform**: Complete IaC for reproducible deployments
 
 ## 🚀 Quick Start
@@ -81,7 +81,7 @@ A complete, production-ready demonstration application showcasing **Dynatrace Bu
 - Terraform >= 1.5.0
 - kubectl >= 1.28  
 - Helm 3.x
-- Docker
+- Docker or Podman (for local builds; CodeBuild handles CI builds)
 - Dynatrace environment with API & PaaS tokens
 
 ### 1. Deploy Infrastructure
@@ -135,11 +135,28 @@ Terraform will skip creating IAM roles, node groups, and the control plane, and 
 aws eks update-kubeconfig --name <cluster-name> --region us-east-1
 ```
 
-### 3. Build and Push Images
+### 3. Build and Push Docker Images
+
+Images are built with **AWS CodeBuild** on native `linux/amd64` — no local cross-compilation needed, even on ARM Macs.
+
+**Trigger a build via CodeBuild (recommended):**
 ```bash
-./scripts/build-images.sh
-./scripts/push-to-ecr.sh
+# After terraform apply, use the output command:
+aws codebuild start-build \
+  --project-name <codebuild_project_name> \
+  --region us-east-1
+
+# Watch logs
+aws logs tail /aws/codebuild/<project-name> --follow
 ```
+
+**Or build locally** (requires Docker or Podman):
+```bash
+./scripts/build-images.sh   # builds all 5 images
+./scripts/push-to-ecr.sh    # pushes to ECR
+```
+
+> **ARM Mac note**: Local builds cross-compile to `linux/amd64` via `--platform` flag. This works but is slow for .NET images under QEMU emulation. Use CodeBuild for faster builds.
 
 ### 4. Deploy Dynatrace Operator
 ```bash
@@ -198,9 +215,8 @@ Tier 4 sends business events to Dynatrace with complete context:
 }
 ```
 
-### 3. Hybrid Monitoring
-- **Full-Stack** (Tiers 1, 2, 5): Code-level visibility, database monitoring
-- **Infrastructure-Only** (Tier 3): Legacy C app with log correlation
+### 3. Monitoring Modes
+- **Full-Stack** (Tiers 1, 2, 3, 5): Code-level visibility, database monitoring
 - **API-Based** (Tier 4): Business Events for SaaS service simulation
 
 ### 4. Cost Allocation  
@@ -253,6 +269,7 @@ totalDue = approvedAmount * (1 + interestRate * termMonths)
 ```
 business_observability_demo/
 ├── README.md                          # This file
+├── buildspec.yml                      # AWS CodeBuild build specification
 ├── .gitignore                         # Git ignore patterns
 │
 ├── tier1-node/                        # Tier 1: Node.js Express
@@ -277,9 +294,7 @@ business_observability_demo/
 │   ├── src/
 │   │   └── server.c                   # HTTP server with JSON parsing
 │   ├── Makefile
-│   ├── loan-risk-engine.service       # systemd service
-│   ├── install.sh
-│   ├── ec2-userdata.sh
+│   ├── Dockerfile                     # Multi-stage Alpine build
 │   └── README.md
 │
 ├── tier4-saas-sim/                    # Tier 4: Python FastAPI
@@ -299,8 +314,7 @@ business_observability_demo/
 │   ├── Services/
 │   │   └── LoanCalculationService.cs
 │   ├── LoanFinalizer.csproj
-│   ├── Dockerfile
-│   ├── ec2-userdata.sh
+│   ├── Dockerfile                     # Multi-stage Alpine build with NuGet cache
 │   └── README.md
 │
 ├── infra/                             # Infrastructure as Code
@@ -308,15 +322,12 @@ business_observability_demo/
 │       ├── main.tf                    # Root module
 │       ├── variables.tf
 │       ├── outputs.tf
+│       ├── codebuild.tf               # CodeBuild project for Docker image builds
 │       ├── terraform.tfvars.example
-│       ├── modules/
-│       │   ├── vpc/                   # VPC with NAT gateways
-│       │   ├── eks/                   # EKS cluster & node groups
-│       │   ├── ec2/                   # EC2 instances for Tier 3 & 5
-│       │   └── rds/                   # PostgreSQL RDS
-│       └── userdata/
-│           ├── tier3-userdata.sh      # Tier 3 EC2 setup
-│           └── tier5-userdata.sh      # Tier 5 EC2 setup
+│       └── modules/
+│           ├── vpc/                   # VPC with NAT gateways
+│           ├── eks/                   # EKS cluster & node groups
+│           └── rds/                   # PostgreSQL RDS
 │
 ├── k8s/                               # Kubernetes Manifests
 │   ├── namespace/
@@ -335,7 +346,16 @@ business_observability_demo/
 │   │   ├── 01-configmap.yaml
 │   │   ├── 02-deployment.yaml
 │   │   └── 03-hpa.yaml
-│   └── tier4/
+│   ├── tier3/
+│   │   ├── 01-configmap.yaml
+│   │   ├── 02-deployment.yaml
+│   │   └── 03-hpa.yaml
+│   ├── tier4/
+│   │   ├── 01-configmap.yaml
+│   │   ├── 02-secret.yaml
+│   │   ├── 03-deployment.yaml
+│   │   └── 04-hpa.yaml
+│   └── tier5/
 │       ├── 01-configmap.yaml
 │       ├── 02-secret.yaml
 │       ├── 03-deployment.yaml
@@ -354,10 +374,11 @@ business_observability_demo/
 │   └── loan-request-highvalue.json
 │
 └── scripts/                           # Deployment automation
-    ├── build-images.sh                # Build Docker images
+    ├── build-images.sh                # Build Docker images (local)
     ├── push-to-ecr.sh                 # Push to AWS ECR
     ├── deploy-k8s.sh                  # Deploy to Kubernetes
     ├── deploy-all.sh                  # End-to-end deployment
+    ├── validate-vpc.sh                # Validate existing VPC
     └── cleanup.sh                     # Cleanup all resources
 ```
 
@@ -373,26 +394,26 @@ business_observability_demo/
 ### Tier 1 (Authorization)
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `TIER2_URL` | Tier 2 service URL | `http://tier2-service:8080` |
+| `TIER2_URL` | Tier 2 service URL | `http://tier2-service.loan-app.svc.cluster.local:8080` |
 | `UNAUTHORIZED_REGIONS` | Blocked regions (comma-separated) | `Sanctioned,Restricted` |
 | `UNAUTHORIZED_CHANNELS` | Blocked channels (comma-separated) | `External,Public` |
 
 ### Tier 2 (Credit Analysis)
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `TIER3_URL` | Tier 3 EC2 URL | `http://10.0.1.100:8000` |
+| `TIER3_URL` | Tier 3 service URL | `http://tier3-service.loan-app.svc.cluster.local:8000` |
 | `SERVER_PORT` | Server port | `8080` |
 
 ### Tier 3 (Risk Analysis)
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `TIER4_HOST` | Tier 4 service host | `tier4-service` |
+| `TIER4_HOST` | Tier 4 service host | `tier4-service.loan-app.svc.cluster.local` |
 | `TIER4_PORT` | Tier 4 service port | `8001` |
 
 ### Tier 4 (Decision Engine)
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `TIER5_URL` | Tier 5 EC2 URL | `http://10.0.1.200:5000` |
+| `TIER5_URL` | Tier 5 service URL | `http://tier5-service.loan-app.svc.cluster.local:5000` |
 | `APPROVAL_THRESHOLD` | Score for approval | `60` |
 | `REJECTION_THRESHOLD` | Score for rejection | `40` |
 
@@ -478,17 +499,17 @@ fetch bizevents
 # Tier 1
 curl http://$TIER1_URL/health
 
-# Tier 2  
+# Tier 2
 kubectl exec -it -n loan-app <tier2-pod> -- curl localhost:8080/actuator/health
 
 # Tier 3
-ssh ec2-user@<tier3-ip> "curl localhost:8000/health"
+kubectl exec -it -n loan-app <tier3-pod> -- curl localhost:8000/health
 
 # Tier 4
 kubectl exec -it -n loan-app <tier4-pod> -- curl localhost:8001/health
 
 # Tier 5
-ssh ec2-user@<tier5-ip> "curl localhost:5000/internal/health"
+kubectl exec -it -n loan-app <tier5-pod> -- curl localhost:5000/internal/health
 ```
 
 ### Database Verification
@@ -505,10 +526,10 @@ LIMIT 10;
 
 ## 🔒 Security Considerations
 
-- All secrets stored in Kubernetes Secrets or AWS Secrets Manager
+- All secrets stored in Kubernetes Secrets
 - Database credentials not hardcoded
 - OneAgent tokens stored securely
-- EC2 instances in private subnets (access via bastion or SSM)
+- All pods run in private subnets via EKS Fargate
 - RDS not publicly accessible
 - Security groups restrict access between tiers
 
