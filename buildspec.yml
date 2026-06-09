@@ -16,6 +16,7 @@ phases:
       - chmod +x scripts/*.sh
 
   build:
+    on-failure: ABORT
     commands:
       - echo "Building all images..."
       - ./scripts/build-images.sh

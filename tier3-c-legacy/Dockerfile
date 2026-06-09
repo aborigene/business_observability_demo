@@ -1,11 +1,11 @@
-FROM alpine:3.19 AS build
+FROM public.ecr.aws/docker/library/alpine:3.19 AS build
 WORKDIR /app
 RUN apk add --no-cache gcc musl-dev make
 COPY Makefile .
 COPY src/ ./src/
 RUN make
 
-FROM alpine:3.19
+FROM public.ecr.aws/docker/library/alpine:3.19
 WORKDIR /app
 RUN mkdir -p /var/log/loan-risk-engine && chmod 777 /var/log/loan-risk-engine
 COPY --from=build /app/loan-risk-server .

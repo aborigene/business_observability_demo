@@ -63,7 +63,12 @@ push_image() {
     
     echo ""
     echo -e "${YELLOW}Pushing $image_name...${NC}"
-    
+
+    if ! $CONTAINER_TOOL image inspect "$ECR_REGISTRY/$image_name:latest" > /dev/null 2>&1; then
+        echo -e "${RED}✗ Image $image_name:latest not found locally — was the build phase successful?${NC}"
+        return 1
+    fi
+
     $CONTAINER_TOOL push "$ECR_REGISTRY/$image_name:latest"
     echo -e "${GREEN}✓ Successfully pushed $image_name:latest${NC}"
 

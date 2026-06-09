@@ -70,17 +70,15 @@ build_image() {
         return 1
     fi
 
-    $CONTAINER_TOOL build --platform "$BUILD_PLATFORM" $EXTRA_BUILD_FLAGS --progress plain -t "$ECR_REGISTRY/$image_name:latest" .
-
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓ Successfully built $service (${BUILD_PLATFORM})${NC}"
-        TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-        $CONTAINER_TOOL tag "$ECR_REGISTRY/$image_name:latest" "$ECR_REGISTRY/$image_name:$TIMESTAMP"
-        echo -e "${GREEN}  Tagged as: $image_name:$TIMESTAMP${NC}"
-    else
+    if ! $CONTAINER_TOOL build --platform "$BUILD_PLATFORM" $EXTRA_BUILD_FLAGS --progress plain -t "$ECR_REGISTRY/$image_name:latest" .; then
         echo -e "${RED}✗ Failed to build $service${NC}"
         return 1
     fi
+
+    echo -e "${GREEN}✓ Successfully built $service (${BUILD_PLATFORM})${NC}"
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    $CONTAINER_TOOL tag "$ECR_REGISTRY/$image_name:latest" "$ECR_REGISTRY/$image_name:$TIMESTAMP"
+    echo -e "${GREEN}  Tagged as: $image_name:$TIMESTAMP${NC}"
 }
 
 # Build all images
