@@ -4,6 +4,6 @@ metadata:
   name: tier4-config
   namespace: loan-app
 data:
-  TIER5_URL: "http://TIER5_EC2_PRIVATE_IP:5000"  # Replace with actual EC2 private IP
+  TIER5_URL: "http://tier5-service.loan-app.svc.cluster.local:5000"
   APPROVAL_THRESHOLD: "60"
   REJECTION_THRESHOLD: "40"

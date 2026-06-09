@@ -37,21 +37,23 @@ module "vpc" {
   azs          = slice(data.aws_availability_zones.available.names, 0, 2)
 }
 
-# EKS Module
+# EKS Module (conditional - only create if not using existing)
 module "eks" {
+  count  = var.use_existing_eks ? 0 : 1
   source = "./modules/eks"
-  
+
   project_name        = var.project_name
   environment         = var.environment
   vpc_id              = local.vpc_id
   private_subnet_ids  = local.private_subnet_ids
   eks_cluster_version = var.eks_cluster_version
+  created_by          = var.created_by
 }
 
 # RDS PostgreSQL Module
 module "rds" {
   source = "./modules/rds"
-  
+
   project_name       = var.project_name
   environment        = var.environment
   vpc_id             = local.vpc_id
@@ -59,77 +61,5 @@ module "rds" {
   db_username        = var.db_username
   db_password        = var.db_password
   db_name            = var.db_name
-  allowed_security_group_ids = [
-    module.tier5_ec2.security_group_id
-  ]
-}
-
-# EC2 for Tier 3 (C Legacy)
-module "tier3_ec2" {
-  source = "./modules/ec2"
-  
-  project_name       = var.project_name
-  environment        = var.environment
-  name_suffix        = "tier3-risk-analysis"
-  vpc_id             = local.vpc_id
-  subnet_id          = local.public_subnet_ids[0]
-  instance_type      = var.tier3_instance_type
-  user_data_template = file("${path.module}/userdata/tier3-userdata.sh")
-  user_data_vars = {
-    dt_env_url    = var.dt_env_url
-    dt_paas_token = var.dt_paas_token
-    tier4_host    = "tier4-service.${var.project_name}.svc.cluster.local"
-    tier4_port    = "8001"
-  }
-  ingress_rules = [
-    {
-      from_port   = 8000
-      to_port     = 8000
-      protocol    = "tcp"
-      cidr_blocks = [local.vpc_cidr]
-      description = "Allow HTTP from VPC"
-    },
-    {
-      from_port   = 22
-      to_port     = 22
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "Allow SSH"
-    }
-  ]
-}
-
-# EC2 for Tier 5 (.NET)
-module "tier5_ec2" {
-  source = "./modules/ec2"
-  
-  project_name       = var.project_name
-  environment        = var.environment
-  name_suffix        = "tier5-loan-finalizer"
-  vpc_id             = local.vpc_id
-  subnet_id          = local.public_subnet_ids[0]
-  instance_type      = var.tier5_instance_type
-  user_data_template = file("${path.module}/userdata/tier5-userdata.sh")
-  user_data_vars = {
-    dt_env_url   = var.dt_env_url
-    dt_paas_token = var.dt_paas_token
-    database_url = "Host=${module.rds.db_endpoint};Port=5432;Database=${var.db_name};Username=${var.db_username};Password=${var.db_password}"
-    base_rate    = "0.02"
-  }
-  ingress_rules = [
-    {
-      from_port   = 5000
-      to_port     = 5000
-      protocol    = "tcp"
-      cidr_blocks = [var.vpc_cidr]
-      description = "Allow HTTP from VPC"
-    },
-    {
-      from_port   = 22
-      to_port     = 22
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "Allow SSH"
-    }
-  ]
+  vpc_cidr           = local.vpc_cidr
 }

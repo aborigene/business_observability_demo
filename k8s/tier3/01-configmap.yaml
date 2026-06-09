@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tier3-config
+  namespace: loan-app
+data:
+  TIER4_HOST: "tier4-service.loan-app.svc.cluster.local"
+  TIER4_PORT: "8001"

@@ -113,3 +113,15 @@ locals {
   private_subnet_ids = var.use_existing_vpc ? var.existing_private_subnet_ids : module.vpc[0].private_subnet_ids
   vpc_cidr           = var.use_existing_vpc ? data.aws_vpc.existing[0].cidr_block : module.vpc[0].vpc_cidr
 }
+
+# Data source for existing EKS cluster (when use_existing_eks = true)
+data "aws_eks_cluster" "existing" {
+  count = var.use_existing_eks ? 1 : 0
+  name  = var.existing_eks_cluster_name
+}
+
+# Local values to abstract EKS source
+locals {
+  eks_cluster_name     = var.use_existing_eks ? var.existing_eks_cluster_name : module.eks[0].cluster_name
+  eks_cluster_endpoint = var.use_existing_eks ? data.aws_eks_cluster.existing[0].endpoint : module.eks[0].cluster_endpoint
+}

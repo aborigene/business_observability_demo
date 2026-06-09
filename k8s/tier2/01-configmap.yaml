@@ -4,6 +4,6 @@ metadata:
   name: tier2-config
   namespace: loan-app
 data:
-  TIER3_URL: "http://TIER3_EC2_PRIVATE_IP:8000"  # Replace with actual EC2 private IP
+  TIER3_URL: "http://tier3-service.loan-app.svc.cluster.local:8000"
   SERVER_PORT: "8080"
   SPRING_PROFILES_ACTIVE: "production"

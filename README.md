@@ -69,10 +69,9 @@ A complete, production-ready demonstration application showcasing **Dynatrace Bu
 ### Infrastructure
 
 - **VPC**: Create new (10.0.0.0/16) or use existing VPC with validation
-- **Deployment Modes**: Create new VPC or reuse existing (with automated validation)
-- **EKS**: Kubernetes 1.28 cluster with managed node groups (t3.medium)
+- **EKS**: Create new Kubernetes 1.28 cluster with managed node groups (t3.medium), or use an existing cluster
 - **EC2**: 2 instances (t3.small) for Tier 3 and Tier 5
-- **RDS**: PostgreSQL 15.4 (db.t3.micro) for loan storage
+- **RDS**: PostgreSQL 15 (db.t3.micro) for loan storage
 - **Terraform**: Complete IaC for reproducible deployments
 
 ## 🚀 Quick Start
@@ -87,32 +86,49 @@ A complete, production-ready demonstration application showcasing **Dynatrace Bu
 
 ### 1. Deploy Infrastructure
 
-#### Option A: Create New VPC (Default)
 ```bash
 cd infra/terraform
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your values (use_existing_vpc = false)
+# Edit terraform.tfvars with your values (see options below)
 terraform init
 terraform apply
 ```
 
-#### Option B: Use Existing VPC
+#### VPC Options
+
+**Option A: Create a new VPC (default)**
+```hcl
+use_existing_vpc = false
+```
+
+**Option B: Use an existing VPC**
 ```bash
-# First, validate your existing VPC
+# First validate your VPC meets requirements
 ./scripts/validate-vpc.sh vpc-xxxxxxxxxxxxx us-east-1
-
-# Update terraform.tfvars with validation output
-cd infra/terraform
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars:
-#   use_existing_vpc = true
-#   existing_vpc_id = "vpc-xxxxx"
-#   existing_public_subnet_ids = [...]
-#   existing_private_subnet_ids = [...]
-
-terraform init
-terraform apply
 ```
+```hcl
+use_existing_vpc            = true
+existing_vpc_id             = "vpc-xxxxxxxxxxxxx"
+existing_public_subnet_ids  = ["subnet-aaa", "subnet-bbb"]
+existing_private_subnet_ids = ["subnet-ccc", "subnet-ddd"]
+```
+
+#### EKS Options
+
+**Option A: Create a new EKS cluster (default)**
+```hcl
+use_existing_eks    = false
+eks_cluster_version = "1.28"
+```
+
+**Option B: Use an existing EKS cluster**
+
+Use this if your AWS environment restricts EKS cluster creation (e.g. via an org-level SCP). Point Terraform at a cluster that already exists:
+```hcl
+use_existing_eks          = true
+existing_eks_cluster_name = "your-cluster-name"
+```
+Terraform will skip creating IAM roles, node groups, and the control plane, and will deploy workloads into the existing cluster instead.
 
 ### 2. Configure kubectl
 ```bash

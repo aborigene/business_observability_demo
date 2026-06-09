@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tier5-config
+  namespace: loan-app
+data:
+  ASPNETCORE_URLS: "http://+:5000"
+  ASPNETCORE_ENVIRONMENT: "Production"
+  Loan__BaseRate: "0.05"

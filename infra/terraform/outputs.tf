@@ -20,32 +20,17 @@ output "private_subnet_ids" {
 
 output "eks_cluster_name" {
   description = "EKS cluster name"
-  value       = module.eks.cluster_name
+  value       = local.eks_cluster_name
 }
 
 output "eks_cluster_endpoint" {
   description = "EKS cluster endpoint"
-  value       = module.eks.cluster_endpoint
+  value       = local.eks_cluster_endpoint
 }
 
-output "tier3_ec2_public_ip" {
-  description = "Tier 3 (C Legacy) EC2 public IP"
-  value       = module.tier3_ec2.public_ip
-}
-
-output "tier3_ec2_private_ip" {
-  description = "Tier 3 (C Legacy) EC2 private IP"
-  value       = module.tier3_ec2.private_ip
-}
-
-output "tier5_ec2_public_ip" {
-  description = "Tier 5 (.NET) EC2 public IP"
-  value       = module.tier5_ec2.public_ip
-}
-
-output "tier5_ec2_private_ip" {
-  description = "Tier 5 (.NET) EC2 private IP"
-  value       = module.tier5_ec2.private_ip
+output "eks_source" {
+  description = "Whether EKS cluster was created or existing was used"
+  value       = var.use_existing_eks ? "existing" : "created"
 }
 
 output "rds_endpoint" {
@@ -60,7 +45,7 @@ output "rds_database_name" {
 
 output "configure_kubectl_command" {
   description = "Command to configure kubectl"
-  value       = "aws eks update-kubeconfig --region ${var.aws_region} --name ${module.eks.cluster_name}"
+  value       = "aws eks update-kubeconfig --region ${var.aws_region} --name ${local.eks_cluster_name}"
 }
 
 output "next_steps" {
@@ -72,25 +57,20 @@ output "next_steps" {
     ========================================
     
     1. Configure kubectl:
-       ${module.eks.configure_kubectl_command}
-    
-    2. SSH to Tier 3 EC2:
-       ssh ec2-user@${module.tier3_ec2.public_ip}
-    
-    3. SSH to Tier 5 EC2:
-       ssh ec2-user@${module.tier5_ec2.public_ip}
-    
-    4. Install Dynatrace Operator in EKS:
-       kubectl apply -f ../../k8s/dynatrace-operator/
-    
-    5. Deploy applications to Kubernetes:
-       kubectl apply -f ../../k8s/
-    
-    6. Database connection:
+       aws eks update-kubeconfig --region ${var.aws_region} --name ${local.eks_cluster_name}
+
+    2. Update k8s/tier5/02-secret.yaml with RDS endpoint:
        Host: ${module.rds.db_endpoint}
        Database: ${module.rds.db_name}
        Username: ${var.db_username}
-    
+
+    3. Install Dynatrace Operator:
+       kubectl apply -f ../../k8s/dynatrace-operator/
+
+    4. Build and push images, then deploy:
+       ./scripts/build-images.sh && ./scripts/push-to-ecr.sh
+       kubectl apply -f ../../k8s/
+
     See docs/SETUP.md for detailed instructions.
   EOT
 }

@@ -27,9 +27,9 @@ variable "db_password" {
   sensitive = true
 }
 
-variable "allowed_security_group_ids" {
-  type    = list(string)
-  default = []
+variable "vpc_cidr" {
+  description = "VPC CIDR block — allows all EKS pods to reach the database"
+  type        = string
 }
 
 resource "aws_db_subnet_group" "main" {
@@ -47,11 +47,11 @@ resource "aws_security_group" "rds" {
   vpc_id      = var.vpc_id
   
   ingress {
-    from_port       = 5432
-    to_port         = 5432
-    protocol        = "tcp"
-    security_groups = var.allowed_security_group_ids
-    description     = "Allow PostgreSQL from application security groups"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+    description = "Allow PostgreSQL from within VPC (EKS pods)"
   }
   
   egress {
@@ -70,7 +70,7 @@ resource "aws_security_group" "rds" {
 resource "aws_db_instance" "main" {
   identifier     = "${var.project_name}-${var.environment}-postgres"
   engine         = "postgres"
-  engine_version = "15.4"
+  engine_version = "15"
   instance_class = "db.t3.micro"
   
   allocated_storage     = 20

@@ -13,6 +13,24 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# Container tool: use podman if available, fall back to docker
+CONTAINER_TOOL=${CONTAINER_TOOL:-$(command -v podman >/dev/null 2>&1 && echo podman || echo docker)}
+
+# Build platform: EKS Fargate runs linux/amd64 by default.
+# Override with: BUILD_PLATFORM=linux/arm64 ./build-images.sh
+BUILD_PLATFORM=${BUILD_PLATFORM:-linux/amd64}
+
+echo -e "${GREEN}Container tool : $CONTAINER_TOOL${NC}"
+echo -e "${GREEN}Build platform : $BUILD_PLATFORM${NC}"
+
+# Ensure podman machine is running on macOS
+if [ "$CONTAINER_TOOL" = "podman" ] && [[ "$OSTYPE" == "darwin"* ]]; then
+    if ! podman machine inspect >/dev/null 2>&1; then
+        echo -e "${YELLOW}Starting podman machine...${NC}"
+        podman machine start
+    fi
+fi
+
 # Get script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -32,23 +50,22 @@ build_image() {
     local service=$1
     local dir=$2
     local image_name=$3
-    
+
     echo ""
     echo -e "${YELLOW}Building $service...${NC}"
     cd "$PROJECT_ROOT/$dir"
-    
+
     if [ ! -f "Dockerfile" ]; then
         echo -e "${RED}Error: Dockerfile not found in $dir${NC}"
         return 1
     fi
-    
-    docker build -t "$ECR_REGISTRY/$image_name:latest" .
-    
+
+    $CONTAINER_TOOL build --platform "$BUILD_PLATFORM" --layers --progress plain -t "$ECR_REGISTRY/$image_name:latest" .
+
     if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓ Successfully built $service${NC}"
-        # Also tag with timestamp
+        echo -e "${GREEN}✓ Successfully built $service (${BUILD_PLATFORM})${NC}"
         TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-        docker tag "$ECR_REGISTRY/$image_name:latest" "$ECR_REGISTRY/$image_name:$TIMESTAMP"
+        $CONTAINER_TOOL tag "$ECR_REGISTRY/$image_name:latest" "$ECR_REGISTRY/$image_name:$TIMESTAMP"
         echo -e "${GREEN}  Tagged as: $image_name:$TIMESTAMP${NC}"
     else
         echo -e "${RED}✗ Failed to build $service${NC}"
@@ -58,9 +75,11 @@ build_image() {
 
 # Build all images
 echo ""
-build_image "Tier 1 (Node.js)" "tier1-node" "tier1-loan-submission"
-build_image "Tier 2 (Java)" "tier2-java" "tier2-credit-analysis"
-build_image "Tier 4 (Python)" "tier4-saas-sim" "tier4-decision-engine"
+build_image "Tier 1 (Node.js)"  "tier1-node"      "tier1-loan-submission"
+build_image "Tier 2 (Java)"     "tier2-java"       "tier2-credit-analysis"
+build_image "Tier 3 (C Legacy)" "tier3-c-legacy"   "tier3-risk-analysis"
+build_image "Tier 4 (Python)"   "tier4-saas-sim"   "tier4-decision-engine"
+build_image "Tier 5 (.NET)"     "tier5-dotnet"     "tier5-loan-finalizer"
 
 echo ""
 echo -e "${GREEN}=========================================="
@@ -71,4 +90,4 @@ echo "To push images to ECR, run:"
 echo "  ./scripts/push-to-ecr.sh"
 echo ""
 echo "Built images:"
-docker images | grep -E "(tier1-loan-submission|tier2-credit-analysis|tier4-decision-engine)"
+$CONTAINER_TOOL images | grep -E "(tier1-loan-submission|tier2-credit-analysis|tier3-risk-analysis|tier4-decision-engine|tier5-loan-finalizer)"

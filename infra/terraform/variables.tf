@@ -53,16 +53,21 @@ variable "eks_cluster_version" {
   default     = "1.28"
 }
 
-variable "tier3_instance_type" {
-  description = "EC2 instance type for Tier 3"
-  type        = string
-  default     = "t3.small"
+variable "use_existing_eks" {
+  description = "Whether to use an existing EKS cluster instead of creating a new one"
+  type        = bool
+  default     = false
 }
 
-variable "tier5_instance_type" {
-  description = "EC2 instance type for Tier 5"
+variable "existing_eks_cluster_name" {
+  description = "Name of the existing EKS cluster to use (required if use_existing_eks = true)"
   type        = string
-  default     = "t3.small"
+  default     = ""
+}
+
+variable "created_by" {
+  description = "Email of the person deploying (used for ACE:CREATED-BY tag required by org SCP)"
+  type        = string
 }
 
 # Database variables

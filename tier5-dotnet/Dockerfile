@@ -1,24 +1,21 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
 WORKDIR /src
 
-# Copy project file and restore dependencies
 COPY *.csproj .
-RUN dotnet restore
+# Cache NuGet packages across builds — avoids re-downloading on every rebuild
+RUN --mount=type=cache,target=/root/.nuget/packages dotnet restore --verbosity detailed
 
-# Copy source code and build
 COPY . .
-RUN dotnet publish -c Release -o /app/publish
+RUN --mount=type=cache,target=/root/.nuget/packages dotnet publish -c Release -o /app/publish
 
-# Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:8.0
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine
 WORKDIR /app
 
-# Copy published app from build stage
 COPY --from=build /app/publish .
 
-# Create non-root user
-RUN useradd -m -u 1001 appuser && \
-    chown -R appuser:appuser /app
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -S appuser -u 1001 -G appgroup && \
+    chown -R appuser:appgroup /app
 
 USER appuser
 

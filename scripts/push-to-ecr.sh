@@ -13,6 +13,10 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
+# Container tool: use podman if available, fall back to docker
+CONTAINER_TOOL=${CONTAINER_TOOL:-$(command -v podman >/dev/null 2>&1 && echo podman || echo docker)}
+echo -e "${GREEN}Container tool: $CONTAINER_TOOL${NC}"
+
 # Check ECR_REGISTRY
 if [ -z "$ECR_REGISTRY" ]; then
     AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -26,7 +30,7 @@ echo -e "${GREEN}ECR Registry: $ECR_REGISTRY${NC}"
 echo ""
 echo -e "${YELLOW}Logging into ECR...${NC}"
 aws ecr get-login-password --region ${AWS_REGION:-us-east-1} | \
-    docker login --username AWS --password-stdin $ECR_REGISTRY
+    $CONTAINER_TOOL login --username AWS --password-stdin $ECR_REGISTRY
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}Failed to login to ECR${NC}"
@@ -62,15 +66,15 @@ push_image() {
     echo ""
     echo -e "${YELLOW}Pushing $image_name...${NC}"
     
-    docker push "$ECR_REGISTRY/$image_name:latest"
+    $CONTAINER_TOOL push "$ECR_REGISTRY/$image_name:latest"
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✓ Successfully pushed $image_name:latest${NC}"
         
         # Also push timestamped tag if it exists
-        TIMESTAMP_TAG=$(docker images "$ECR_REGISTRY/$image_name" --format "{{.Tag}}" | grep -v latest | head -1)
+        TIMESTAMP_TAG=$($CONTAINER_TOOL images "$ECR_REGISTRY/$image_name" --format "{{.Tag}}" | grep -v latest | head -1)
         if [ ! -z "$TIMESTAMP_TAG" ]; then
-            docker push "$ECR_REGISTRY/$image_name:$TIMESTAMP_TAG"
+            $CONTAINER_TOOL push "$ECR_REGISTRY/$image_name:$TIMESTAMP_TAG"
             echo -e "${GREEN}✓ Successfully pushed $image_name:$TIMESTAMP_TAG${NC}"
         fi
     else
@@ -84,14 +88,18 @@ echo ""
 echo -e "${YELLOW}Ensuring ECR repositories exist...${NC}"
 create_repo_if_not_exists "tier1-loan-submission"
 create_repo_if_not_exists "tier2-credit-analysis"
+create_repo_if_not_exists "tier3-risk-analysis"
 create_repo_if_not_exists "tier4-decision-engine"
+create_repo_if_not_exists "tier5-loan-finalizer"
 
 # Push images
 echo ""
 echo -e "${YELLOW}Pushing images...${NC}"
 push_image "tier1-loan-submission"
 push_image "tier2-credit-analysis"
+push_image "tier3-risk-analysis"
 push_image "tier4-decision-engine"
+push_image "tier5-loan-finalizer"
 
 echo ""
 echo -e "${GREEN}=========================================="
@@ -101,7 +109,9 @@ echo ""
 echo "Image URIs:"
 echo "  Tier 1: $ECR_REGISTRY/tier1-loan-submission:latest"
 echo "  Tier 2: $ECR_REGISTRY/tier2-credit-analysis:latest"
+echo "  Tier 3: $ECR_REGISTRY/tier3-risk-analysis:latest"
 echo "  Tier 4: $ECR_REGISTRY/tier4-decision-engine:latest"
+echo "  Tier 5: $ECR_REGISTRY/tier5-loan-finalizer:latest"
 echo ""
 echo "Next steps:"
 echo "  1. Update Kubernetes manifests with these image URIs"

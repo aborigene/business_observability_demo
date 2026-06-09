@@ -18,6 +18,12 @@ variable "eks_cluster_version" {
   type = string
 }
 
+variable "created_by" {
+  type = string
+}
+
+data "aws_region" "current" {}
+
 # IAM role for EKS cluster
 resource "aws_iam_role" "cluster" {
   name = "${var.project_name}-${var.environment}-eks-cluster-role"
@@ -67,6 +73,10 @@ resource "aws_eks_cluster" "main" {
   name     = "${var.project_name}-${var.environment}-cluster"
   role_arn = aws_iam_role.cluster.arn
   version  = var.eks_cluster_version
+
+  tags = {
+    "ACE:CREATED-BY" = var.created_by
+  }
   
   vpc_config {
     subnet_ids              = var.private_subnet_ids
@@ -151,5 +161,5 @@ output "cluster_security_group_id" {
 }
 
 output "configure_kubectl_command" {
-  value = "aws eks update-kubeconfig --region ${aws_eks_cluster.main.region} --name ${aws_eks_cluster.main.name}"
+  value = "aws eks update-kubeconfig --region ${data.aws_region.current.name} --name ${aws_eks_cluster.main.name}"
 }
