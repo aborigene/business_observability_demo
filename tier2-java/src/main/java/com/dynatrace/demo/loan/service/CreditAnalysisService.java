@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.Random;
 
 @Service
@@ -31,7 +32,7 @@ public class CreditAnalysisService {
         int tier2Score = random.nextInt(71); // 0 to 70 inclusive
         
         application.setTier2Score(tier2Score);
-        application.setUpdatedAt(Instant.now());
+        application.setUpdatedAt(DateTimeFormatter.ISO_INSTANT.format(Instant.now()));
 
         log.info("Tier 2: Generated credit score - applicationId: {}, tier2Score: {}, " +
                 "customerId: {}, requestedAmount: {}",

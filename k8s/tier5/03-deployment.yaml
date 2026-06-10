@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: loan-finalizer
-        image: YOUR_ECR_REGISTRY/tier5-loan-finalizer:latest
+        image: 537309256512.dkr.ecr.us-east-1.amazonaws.com/tier5-loan-finalizer:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 5000
@@ -44,7 +44,7 @@ spec:
             configMapKeyRef:
               name: tier5-config
               key: Loan__BaseRate
-        - name: DATABASE_URL
+        - name: ConnectionStrings__DefaultConnection
           valueFrom:
             secretKeyRef:
               name: tier5-secret

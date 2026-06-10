@@ -136,7 +136,8 @@ int forward_to_tier4(const char* payload, const char* traceparent, const char* t
                       "POST /internal/decision/evaluate HTTP/1.1\r\n"
                       "Host: %s:%s\r\n"
                       "Content-Type: application/json\r\n"
-                      "Content-Length: %zu\r\n",
+                      "Content-Length: %zu\r\n"
+                      "Connection: close\r\n",
                       tier4_host, tier4_port, strlen(payload));
     
     if (traceparent) {
@@ -159,16 +160,35 @@ int forward_to_tier4(const char* payload, const char* traceparent, const char* t
         close(sockfd);
         return -1;
     }
-    
-    ssize_t n = recv(sockfd, response_buffer, buffer_size - 1, 0);
+
+    // Read full response, looping until connection closes
+    size_t total = 0;
+    ssize_t n;
+    while (total < buffer_size - 1) {
+        n = recv(sockfd, response_buffer + total, buffer_size - 1 - total, 0);
+        if (n <= 0) break;
+        total += n;
+        // Stop early once we have headers + Content-Length bytes
+        response_buffer[total] = '\0';
+        char* hdr_end = strstr(response_buffer, "\r\n\r\n");
+        if (hdr_end) {
+            char* cl = strstr(response_buffer, "Content-Length:");
+            if (!cl) cl = strstr(response_buffer, "content-length:");
+            if (cl) {
+                size_t content_len = (size_t)atol(cl + 15);
+                size_t body_offset = (size_t)(hdr_end + 4 - response_buffer);
+                if (total >= body_offset + content_len) break;
+            }
+        }
+    }
     close(sockfd);
-    
-    if (n < 0) {
+
+    if (total == 0) {
         fprintf(stderr, "Failed to receive response\n");
         return -1;
     }
-    
-    response_buffer[n] = '\0';
+
+    response_buffer[total] = '\0';
     return 0;
 }
 
@@ -183,32 +203,29 @@ void handle_request(int client_socket) {
     
     buffer[bytes_read] = '\0';
     
-    // Parse headers
-    char* traceparent = NULL;
-    char* tracestate = NULL;
-    char* line = strtok(buffer, "\r\n");
-    char* body_start = NULL;
-    
-    while (line) {
-        if (strncmp(line, "traceparent:", 12) == 0) {
-            traceparent = strdup(line + 13);
-            // Trim whitespace
-            while (*traceparent == ' ') traceparent++;
-        } else if (strncmp(line, "tracestate:", 11) == 0) {
-            tracestate = strdup(line + 12);
-            while (*tracestate == ' ') tracestate++;
-        } else if (strlen(line) == 0) {
-            body_start = line + 1;
-            break;
-        }
-        line = strtok(NULL, "\r\n");
-    }
-    
-    if (!body_start) {
+    // Find headers/body boundary
+    char* separator = strstr(buffer, "\r\n\r\n");
+    if (!separator) {
         const char* error_response = "HTTP/1.1 400 Bad Request\r\n\r\n";
         send(client_socket, error_response, strlen(error_response), 0);
         close(client_socket);
         return;
+    }
+    char* body_start = separator + 4;
+
+    // Parse headers for trace context (strtok modifies buffer, but body_start is already saved)
+    char* traceparent = NULL;
+    char* tracestate = NULL;
+    char* line = strtok(buffer, "\r\n");
+    while (line && line < separator) {
+        if (strncmp(line, "traceparent:", 12) == 0) {
+            traceparent = strdup(line + 13);
+            while (*traceparent == ' ') traceparent++;
+        } else if (strncmp(line, "tracestate:", 11) == 0) {
+            tracestate = strdup(line + 12);
+            while (*tracestate == ' ') tracestate++;
+        }
+        line = strtok(NULL, "\r\n");
     }
     
     clock_t start_time = clock();

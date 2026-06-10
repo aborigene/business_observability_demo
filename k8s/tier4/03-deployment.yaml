@@ -25,7 +25,7 @@ spec:
     spec:
       containers:
       - name: decision-engine
-        image: YOUR_ECR_REGISTRY/tier4-decision-engine:latest
+        image: 537309256512.dkr.ecr.us-east-1.amazonaws.com/tier4-decision-engine:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8001

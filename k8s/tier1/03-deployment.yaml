@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: loan-submission
-        image: YOUR_ECR_REGISTRY/tier1-loan-submission:latest
+        image: 537309256512.dkr.ecr.us-east-1.amazonaws.com/tier1-loan-submission:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 3000

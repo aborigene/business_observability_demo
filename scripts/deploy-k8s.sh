@@ -60,7 +60,7 @@ update_images() {
     echo -e "${YELLOW}Updating image references in manifests...${NC}"
     
     # Create temporary copies with updated images
-    for tier in tier1 tier2 tier4; do
+    for tier in tier1 tier2 tier3 tier4 tier5; do
         if [ -f "$K8S_DIR/$tier/03-deployment.yaml" ] || [ -f "$K8S_DIR/$tier/02-deployment.yaml" ]; then
             deployment_file=$(ls $K8S_DIR/$tier/*deployment.yaml 2>/dev/null | head -1)
             sed "s|YOUR_ECR_REGISTRY|$ECR_REGISTRY|g" $deployment_file > ${deployment_file}.tmp
@@ -88,10 +88,20 @@ echo ""
 echo -e "${BLUE}=== Deploying Tier 2 (Java) ===${NC}"
 kubectl apply -f "$K8S_DIR/tier2/"
 
+# Deploy Tier 3
+echo ""
+echo -e "${BLUE}=== Deploying Tier 3 (C Legacy) ===${NC}"
+kubectl apply -f "$K8S_DIR/tier3/"
+
 # Deploy Tier 4
 echo ""
 echo -e "${BLUE}=== Deploying Tier 4 (Python) ===${NC}"
 kubectl apply -f "$K8S_DIR/tier4/"
+
+# Deploy Tier 5
+echo ""
+echo -e "${BLUE}=== Deploying Tier 5 (.NET) ===${NC}"
+kubectl apply -f "$K8S_DIR/tier5/"
 
 # Wait for deployments
 echo ""
@@ -101,7 +111,11 @@ kubectl wait --for=condition=available --timeout=300s \
 kubectl wait --for=condition=available --timeout=300s \
     deployment/tier2-credit-analysis -n loan-app
 kubectl wait --for=condition=available --timeout=300s \
+    deployment/tier3-risk-analysis -n loan-app
+kubectl wait --for=condition=available --timeout=300s \
     deployment/tier4-decision-engine -n loan-app
+kubectl wait --for=condition=available --timeout=300s \
+    deployment/tier5-loan-finalizer -n loan-app
 
 # Get status
 echo ""
@@ -144,7 +158,9 @@ echo ""
 echo -e "${BLUE}View logs:${NC}"
 echo "  kubectl logs -n loan-app -l app=tier1 --tail=50"
 echo "  kubectl logs -n loan-app -l app=tier2 --tail=50"
+echo "  kubectl logs -n loan-app -l app=tier3 --tail=50"
 echo "  kubectl logs -n loan-app -l app=tier4 --tail=50"
+echo "  kubectl logs -n loan-app -l app=tier5 --tail=50"
 
 echo ""
 echo -e "${BLUE}Monitor pods:${NC}"

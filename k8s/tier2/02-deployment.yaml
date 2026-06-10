@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: credit-analysis
-        image: YOUR_ECR_REGISTRY/tier2-credit-analysis:latest
+        image: 537309256512.dkr.ecr.us-east-1.amazonaws.com/tier2-credit-analysis:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080

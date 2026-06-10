@@ -4,8 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,14 +19,14 @@ public class LoanApplication {
     private String costCenter;
     private String team;
     private String environment;
-    private Instant createdAt;
-    private Instant updatedAt;
-    
+    private String createdAt;
+    private String updatedAt;
+
     // Credit scores
     private Integer tier2Score;
     private Integer tier3Score;
     private Integer finalScore;
-    
+
     // Decision fields
     private String decisionStatus;
     private Double approvedAmount;

@@ -1,0 +1,153 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: load-generator-script
+  namespace: loan-app
+data:
+  generator.py: |
+    import requests
+    import random
+    import time
+    import json
+    import uuid
+    import logging
+
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
+    log = logging.getLogger("load-generator")
+
+    TIER1_URL = "http://tier1-service.loan-app.svc.cluster.local/loan/applications"
+
+    SCENARIOS = [
+        # High score — APPROVED
+        {
+            "requestedAmount": 15000,
+            "termMonths": 36,
+            "product":"debt_consolidation",
+            "region": "NorthAmerica",
+            "channel": "online",
+            "costCenter": "retail-banking",
+            "team": "personal-loan-team",
+            "segment": "retail",
+        },
+        # High value — triggers Tier 3
+        {
+            "requestedAmount": 75000,
+            "termMonths": 120,
+            "product":"home_improvement",
+            "region": "NorthAmerica",
+            "channel": "branch",
+            "costCenter": "commercial-banking",
+            "team": "mortgage-team",
+            "segment": "commercial",
+        },
+        # Low amount — may be REJECTED or PARTIAL
+        {
+            "requestedAmount": 5000,
+            "termMonths": 24,
+            "product":"personal",
+            "region": "Europe",
+            "channel": "mobile",
+            "costCenter": "retail-banking",
+            "team": "personal-loan-team",
+            "segment": "retail",
+        },
+        # Unauthorized region — blocked at Tier 1
+        {
+            "requestedAmount": 20000,
+            "termMonths": 60,
+            "product":"business",
+            "region": "Sanctioned",
+            "channel": "online",
+            "costCenter": "commercial-banking",
+            "team": "auto-loan-team",
+            "segment": "commercial",
+        },
+        # Premium segment
+        {
+            "requestedAmount": 250000,
+            "termMonths": 240,
+            "product":"real_estate",
+            "region": "Asia",
+            "channel": "branch",
+            "costCenter": "wealth-management",
+            "team": "mortgage-team",
+            "segment": "premium",
+        },
+        # Auto loan
+        {
+            "requestedAmount": 32000,
+            "termMonths": 60,
+            "product":"auto",
+            "region": "NorthAmerica",
+            "channel": "online",
+            "costCenter": "retail-banking",
+            "team": "auto-loan-team",
+            "segment": "retail",
+        },
+    ]
+
+    def send_request(scenario):
+        payload = dict(scenario)
+        payload["customerId"] = f"cust-{uuid.uuid4().hex[:8]}"
+        try:
+            resp = requests.post(TIER1_URL, json=payload, timeout=10)
+            try:
+                result = resp.json()
+                decision = result.get("decision") or result.get("status") or str(resp.status_code)
+            except Exception:
+                decision = f"non-json(status={resp.status_code}, body={resp.text[:100]})"
+            log.info(
+                "customerId=%s region=%s amount=%s decision=%s",
+                payload["customerId"],
+                payload["region"],
+                payload["requestedAmount"],
+                decision,
+            )
+        except Exception as e:
+            log.warning("Request failed: %s", e)
+
+    log.info("Load generator started — target: %s", TIER1_URL)
+
+    while True:
+        scenario = random.choice(SCENARIOS)
+        send_request(scenario)
+        time.sleep(random.uniform(0.5, 2.0))
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  namespace: loan-app
+  labels:
+    app: load-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+      - name: load-generator
+        image: public.ecr.aws/docker/library/python:3.11-slim
+        command: ["sh", "-c", "pip install requests -q && python /scripts/generator.py"]
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        volumeMounts:
+        - name: script
+          mountPath: /scripts
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+      volumes:
+      - name: script
+        configMap:
+          name: load-generator-script

@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: risk-analysis
-        image: YOUR_ECR_REGISTRY/tier3-risk-analysis:latest
+        image: 537309256512.dkr.ecr.us-east-1.amazonaws.com/tier3-risk-analysis:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
@@ -47,16 +47,14 @@ spec:
             cpu: 500m
             memory: 128Mi
         livenessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 8000
           initialDelaySeconds: 10
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
-          httpGet:
-            path: /health
+          tcpSocket:
             port: 8000
           initialDelaySeconds: 5
           periodSeconds: 5

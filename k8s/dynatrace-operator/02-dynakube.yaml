@@ -1,46 +1,19 @@
-apiVersion: dynatrace.com/v1beta1
+apiVersion: dynatrace.com/v1beta5
 kind: DynaKube
 metadata:
-  name: dynakube
+  name: loan-app-dynakube
   namespace: dynatrace
+  annotations:
+    feature.dynatrace.com/k8s-app-enabled: "true"
 spec:
-  # Replace with your Dynatrace environment URL
-  apiUrl: https://YOUR_ENVIRONMENT_ID.live.dynatrace.com/api
-  
-  # Network zones (optional)
-  # networkZone: demo-cluster
-  
-  # OneAgent configuration for full-stack monitoring
-  oneAgent:
-    classicFullStack:
-      enabled: true
-      tolerations:
-        - effect: NoSchedule
-          key: node-role.kubernetes.io/master
-          operator: Exists
-      resources:
-        requests:
-          cpu: 100m
-          memory: 256Mi
-        limits:
-          cpu: 500m
-          memory: 512Mi
-      
-      # Host properties for better organization
-      env:
-        - name: DT_TAGS
-          value: "Environment=demo Application=loan-application Platform=eks"
-        - name: DT_CLUSTER_ID
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.uid
-  
-  # ActiveGate configuration (optional, for Kubernetes monitoring)
+  apiUrl: https://fov31014.live.dynatrace.com/api
+  tokens: loan-app-dynakube-tokens
+
+  # ActiveGate handles routing and Kubernetes monitoring
   activeGate:
     capabilities:
       - routing
       - kubernetes-monitoring
-      - dynatrace-api
     resources:
       requests:
         cpu: 500m
@@ -48,4 +21,12 @@ spec:
       limits:
         cpu: 1000m
         memory: 1Gi
-    replicas: 1
+
+  # Application monitoring via init-container injection (works on EKS Fargate)
+  # No namespaceSelector = covers all namespaces in the cluster
+  oneAgent:
+    applicationMonitoring: {}
+
+  # Enrich spans and metrics with Kubernetes metadata
+  metadataEnrichment:
+    enabled: true
