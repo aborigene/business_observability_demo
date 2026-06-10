@@ -85,3 +85,6 @@ $RECYCLE.BIN/
 *.temp
 *.bak
 *.backup
+
+# Dynatrace secret files with real tokens (use *.example as template)
+k8s/dynatrace-operator/01-secret.yaml
