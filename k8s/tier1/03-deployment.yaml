@@ -56,6 +56,10 @@ spec:
             secretKeyRef:
               name: tier1-secret
               key: UNAUTHORIZED_CHANNELS
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://dynatrace-otelcol.dynatrace:4318"
+        - name: OTEL_SERVICE_NAME
+          value: "tier1-authorization"
         resources:
           requests:
             cpu: 100m

@@ -49,6 +49,10 @@ spec:
             secretKeyRef:
               name: tier5-secret
               key: DATABASE_URL
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://dynatrace-otelcol.dynatrace:4317"
+        - name: OTEL_SERVICE_NAME
+          value: "tier5-loan-finalizer"
         resources:
           requests:
             cpu: 200m

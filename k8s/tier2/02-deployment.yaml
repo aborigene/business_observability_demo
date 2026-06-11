@@ -46,6 +46,12 @@ spec:
               key: SPRING_PROFILES_ACTIVE
         - name: JAVA_OPTS
           value: "-Xms256m -Xmx512m -XX:+UseG1GC"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://dynatrace-otelcol.dynatrace:4317"
+        - name: OTEL_SERVICE_NAME
+          value: "tier2-credit-analysis"
+        - name: OTEL_LOGS_EXPORTER
+          value: "otlp"
         resources:
           requests:
             cpu: 200m

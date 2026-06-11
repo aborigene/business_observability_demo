@@ -39,6 +39,9 @@ spec:
             configMapKeyRef:
               name: tier3-config
               key: TIER4_PORT
+        volumeMounts:
+        - name: logs
+          mountPath: /var/log/loan-risk-engine
         resources:
           requests:
             cpu: 100m
@@ -60,6 +63,32 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
+
+      # Sidecar: tails the C app's JSON log file and ships via OTLP HTTP
+      - name: otel-log-collector
+        image: otel/opentelemetry-collector-contrib:0.104.0
+        args:
+          - --config=/etc/otelcol/config.yaml
+        volumeMounts:
+        - name: logs
+          mountPath: /var/log/loan-risk-engine
+          readOnly: true
+        - name: otel-sidecar-config
+          mountPath: /etc/otelcol
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+
+      volumes:
+      - name: logs
+        emptyDir: {}
+      - name: otel-sidecar-config
+        configMap:
+          name: tier3-otel-sidecar-config
 ---
 apiVersion: v1
 kind: Service

@@ -15,6 +15,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Wire up OTel log export if endpoint is configured
+_otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "")
+if _otlp_endpoint:
+    try:
+        from opentelemetry._logs import set_logger_provider
+        from opentelemetry.sdk._logs import LoggerProvider
+        from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+        from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
+        from opentelemetry.sdk.resources import Resource, SERVICE_NAME
+        from opentelemetry.instrumentation.logging import LoggingInstrumentor
+
+        _resource = Resource.create({SERVICE_NAME: os.getenv("OTEL_SERVICE_NAME", "tier4-decision-service")})
+        _lp = LoggerProvider(resource=_resource)
+        _lp.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
+        set_logger_provider(_lp)
+        LoggingInstrumentor().instrument(set_logging_format=True)
+        logger.info("OTel log export initialised → %s", _otlp_endpoint)
+    except Exception as _e:
+        logger.warning("OTel log init failed: %s", _e)
+
 app = FastAPI(title="Loan Decision Service (Tier 4 - SaaS Simulator)")
 
 # Configuration from environment

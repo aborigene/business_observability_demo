@@ -1,0 +1,56 @@
+---
+# OTel collector sidecar config for tier3 (C legacy service).
+# Reads the JSON log file written by the C process, parses it, and forwards
+# to Dynatrace via OTLP HTTP — no changes to the C binary required.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tier3-otel-sidecar-config
+  namespace: loan-app
+data:
+  config.yaml: |
+    receivers:
+      filelog:
+        include:
+          - /var/log/loan-risk-engine/app.log
+        # start_at: beginning re-ships all existing lines on (re)start;
+        # acceptable here because the volume is an emptyDir reset on pod death.
+        start_at: beginning
+        operators:
+          - type: json_parser
+            timestamp:
+              parse_from: attributes.timestamp
+              layout: '%Y-%m-%dT%H:%M:%SZ'
+            severity:
+              parse_from: attributes.level
+          - type: move
+            from: attributes.message
+            to: body
+          - type: remove
+            field: attributes.timestamp
+          - type: remove
+            field: attributes.level
+
+    processors:
+      resource:
+        attributes:
+          - key: service.name
+            value: tier3-risk-analysis
+            action: insert
+          - key: service.tier
+            value: tier3
+            action: insert
+      batch:
+        send_batch_size: 100
+        timeout: 5s
+
+    exporters:
+      otlphttp:
+        endpoint: http://dynatrace-otelcol.dynatrace:4318
+
+    service:
+      pipelines:
+        logs:
+          receivers: [filelog]
+          processors: [resource, batch]
+          exporters: [otlphttp]

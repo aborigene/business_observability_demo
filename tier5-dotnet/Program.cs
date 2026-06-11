@@ -25,6 +25,13 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddJsonConsole();
 
+// OTel log export — reads OTEL_EXPORTER_OTLP_ENDPOINT automatically
+if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT")))
+{
+    builder.Services.AddOpenTelemetry()
+        .WithLogging(logging => logging.AddOtlpExporter());
+}
+
 var app = builder.Build();
 
 // Apply database migrations

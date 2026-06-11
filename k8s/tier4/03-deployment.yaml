@@ -57,6 +57,10 @@ spec:
             secretKeyRef:
               name: tier4-secret
               key: DT_API_TOKEN
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://dynatrace-otelcol.dynatrace:4318"
+        - name: OTEL_SERVICE_NAME
+          value: "tier4-decision-service"
         resources:
           requests:
             cpu: 100m

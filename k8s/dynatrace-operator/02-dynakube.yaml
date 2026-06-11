@@ -1,32 +1,82 @@
-apiVersion: dynatrace.com/v1beta5
+---
+# DynaKube 1: Kubernetes monitoring (cluster-level) + KSPM
+# https://docs.dynatrace.com/docs/ingest-from/setup-on-k8s/reference/dynakube-parameters
+apiVersion: dynatrace.com/v1beta6
 kind: DynaKube
 metadata:
-  name: loan-app-dynakube
+  name: eks-k8s-2026-06-10
   namespace: dynatrace
+  labels:
+    dynatrace.com/created-by: "dynatrace.kubernetes"
   annotations:
     feature.dynatrace.com/k8s-app-enabled: "true"
 spec:
   apiUrl: https://fov31014.live.dynatrace.com/api
-  tokens: loan-app-dynakube-tokens
-
-  # ActiveGate handles routing and Kubernetes monitoring
+  tokens: eks-k8s-2026-06-10
   activeGate:
     capabilities:
-      - routing
       - kubernetes-monitoring
     resources:
       requests:
-        cpu: 500m
-        memory: 512Mi
-      limits:
         cpu: 1000m
-        memory: 1Gi
+        memory: 10Gi
+      limits:
+        cpu: 2000m
+        memory: 10Gi
+    replicas: 1
+  kspm:
+    mappedHostPaths:
+      - /boot
+      - /etc
+      - /proc/sys/kernel
+      - /sys/fs
+      - /sys/kernel/security/apparmor
+      - /usr/lib/systemd/system
+      - /var/lib
+  templates:
+    kspmNodeConfigurationCollector:
+      imageRef:
+        repository: public.ecr.aws/dynatrace/dynatrace-k8s-node-config-collector
+        tag: 1.5.10
 
-  # Application monitoring via init-container injection (works on EKS Fargate)
-  # No namespaceSelector = covers all namespaces in the cluster
+---
+# DynaKube 2: OneAgent injection + routing ActiveGate + OTel ingest + log monitoring
+# https://docs.dynatrace.com/docs/ingest-from/setup-on-k8s/reference/dynakube-parameters
+apiVersion: dynatrace.com/v1beta6
+kind: DynaKube
+metadata:
+  name: eks-k8s-2026-06-10-agents
+  namespace: dynatrace
+  labels:
+    dynatrace.com/created-by: "dynatrace.kubernetes"
+spec:
+  apiUrl: https://fov31014.live.dynatrace.com/api
+  tokens: eks-k8s-2026-06-10
+  # applicationMonitoring uses init-container injection — no DaemonSet, works on EKS Fargate
   oneAgent:
     applicationMonitoring: {}
-
-  # Enrich spans and metrics with Kubernetes metadata
-  metadataEnrichment:
-    enabled: true
+  activeGate:
+    capabilities:
+      - routing
+      - debugging
+    resources:
+      requests:
+        cpu: 500m
+        memory: 4Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+    replicas: 3
+  templates:
+    otelCollector:
+      imageRef:
+        repository: public.ecr.aws/dynatrace/dynatrace-otel-collector
+        tag: latest
+  # Built-in multi-protocol telemetry ingest via the operator-managed OTel collector
+  telemetryIngest:
+    protocols:
+      - jaeger
+      - otlp
+      - statsd
+      - zipkin
+    serviceName: telemetry-ingest

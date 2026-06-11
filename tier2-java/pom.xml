@@ -56,6 +56,21 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
+
+        <!-- OpenTelemetry: auto-configures SDK from OTEL_* env vars -->
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-spring-boot-starter</artifactId>
+            <version>2.9.0</version>
+        </dependency>
+
+        <!-- Bridges Logback log records into the OTel SDK LoggerProvider -->
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-logback-appender-1.0</artifactId>
+            <version>2.9.0</version>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
     
     <build>
