@@ -2,6 +2,7 @@ using LoanFinalizer.Data;
 using LoanFinalizer.Models;
 using LoanFinalizer.Services;
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Logs;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
