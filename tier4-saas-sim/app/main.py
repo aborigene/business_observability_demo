@@ -131,22 +131,22 @@ async def evaluate_decision(
         f"rejectionThreshold: {REJECTION_THRESHOLD}"
     )
     
-    # Send Business Event to Dynatrace (async, non-blocking)
-    asyncio.create_task(send_business_event(application, traceparent))
-    
     # Forward to Tier 5 for final calculation and persistence
     try:
         tier5_response = await forward_to_tier5(application, traceparent, tracestate)
-        
+
+        # Send Business Event to Dynatrace (async, non-blocking)
+        asyncio.create_task(send_business_event(application, traceparent))
+
         latency_ms = (datetime.now() - start_time).total_seconds() * 1000
-        
+
         logger.info(
             f"Tier 4: Decision complete and forwarded to Tier 5 - "
             f"applicationId: {application.applicationId}, "
             f"decisionStatus: {application.decisionStatus}, "
             f"latencyMs: {latency_ms:.2f}"
         )
-        
+
         return tier5_response
         
     except Exception as e:
@@ -179,7 +179,6 @@ async def send_business_event(application: LoanApplication, traceparent: Optiona
             "loan.applicationId": application.applicationId,
             "loan.customerId": application.customerId,
             "loan.requestedAmount": application.requestedAmount,
-            "loan.approvedAmount": application.approvedAmount or 0,
             "loan.termMonths": application.termMonths,
 
             # Scores
