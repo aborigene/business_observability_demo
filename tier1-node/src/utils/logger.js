@@ -4,14 +4,14 @@ const winston = require('winston');
 const otelTransport = (() => {
   if (!process.env.OTEL_EXPORTER_OTLP_ENDPOINT) return null;
   try {
-    const { LoggerProvider, SimpleLogRecordProcessor } = require('@opentelemetry/sdk-logs');
+    const { LoggerProvider, BatchLogRecordProcessor } = require('@opentelemetry/sdk-logs');
     const { OTLPLogExporter } = require('@opentelemetry/exporter-logs-otlp-http');
     const { OpenTelemetryTransportV3 } = require('@opentelemetry/winston-transport');
     const { Resource } = require('@opentelemetry/resources');
     const lp = new LoggerProvider({
       resource: new Resource({ 'service.name': process.env.OTEL_SERVICE_NAME || 'tier1-authorization' })
     });
-    lp.addLogRecordProcessor(new SimpleLogRecordProcessor(new OTLPLogExporter()));
+    lp.addLogRecordProcessor(new BatchLogRecordProcessor(new OTLPLogExporter()));
     return new OpenTelemetryTransportV3({ loggerProvider: lp });
   } catch (e) {
     console.error('OTel log init failed:', e.message);

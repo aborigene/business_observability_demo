@@ -171,46 +171,41 @@ async def send_business_event(application: LoanApplication, traceparent: Optiona
     
     try:
         event_payload = {
-            "eventType": "bizevents",
-            "events": [
-                {
-                    "event.type": "com.loan.decision.made",
-                    "event.provider": "loan-decision-service",
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
-                    
-                    # Business identifiers
-                    "loan.applicationId": application.applicationId,
-                    "loan.customerId": application.customerId,
-                    "loan.requestedAmount": application.requestedAmount,
-                    "loan.approvedAmount": application.approvedAmount or 0,
-                    "loan.termMonths": application.termMonths,
-                    
-                    # Scores
-                    "loan.tier2Score": application.tier2Score or 0,
-                    "loan.tier3Score": application.tier3Score or 0,
-                    "loan.finalScore": application.finalScore or 0,
-                    
-                    # Decision
-                    "loan.decisionStatus": application.decisionStatus,
-                    "loan.decisionReason": application.decisionReason,
-                    
-                    # Business dimensions for Cost Allocation
-                    "loan.product": application.product,
-                    "loan.segment": application.segment,
-                    "loan.channel": application.channel,
-                    "loan.region": application.region,
-                    "loan.costCenter": application.costCenter,
-                    "loan.team": application.team,
-                    "loan.environment": application.environment,
-                    
-                    # Trace correlation (if available)
-                    "dt.trace_id": extract_trace_id(traceparent) if traceparent else None
-                }
-            ]
+            "event.type": "com.loan.decision.made",
+            "event.provider": "loan-decision-service",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+
+            # Business identifiers
+            "loan.applicationId": application.applicationId,
+            "loan.customerId": application.customerId,
+            "loan.requestedAmount": application.requestedAmount,
+            "loan.approvedAmount": application.approvedAmount or 0,
+            "loan.termMonths": application.termMonths,
+
+            # Scores
+            "loan.tier2Score": application.tier2Score or 0,
+            "loan.tier3Score": application.tier3Score or 0,
+            "loan.finalScore": application.finalScore or 0,
+
+            # Decision
+            "loan.decisionStatus": application.decisionStatus,
+            "loan.decisionReason": application.decisionReason,
+
+            # Business dimensions for Cost Allocation
+            "loan.product": application.product,
+            "loan.segment": application.segment,
+            "loan.channel": application.channel,
+            "loan.region": application.region,
+            "loan.costCenter": application.costCenter,
+            "loan.team": application.team,
+            "loan.environment": application.environment,
+
+            # Trace correlation (if available)
+            "dt.trace_id": extract_trace_id(traceparent) if traceparent else None
         }
-        
+
         # Remove None values
-        event_payload["events"][0] = {k: v for k, v in event_payload["events"][0].items() if v is not None}
+        event_payload = {k: v for k, v in event_payload.items() if v is not None}
         
         # Send to Dynatrace Business Events API
         ingest_url = f"{DT_ENV_URL}/api/v2/bizevents/ingest"
