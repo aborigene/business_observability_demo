@@ -121,7 +121,8 @@ async def evaluate_decision(
         application.decisionReason = f"Final score {final_score} qualifies for partial approval (between {REJECTION_THRESHOLD} and {APPROVAL_THRESHOLD})"
     
     application.updatedAt = datetime.utcnow().isoformat()
-    
+    decision_timestamp = datetime.utcnow().isoformat() + "Z"
+
     logger.info(
         f"Tier 4: Decision calculated - "
         f"applicationId: {application.applicationId}, "
@@ -136,7 +137,7 @@ async def evaluate_decision(
         tier5_response = await forward_to_tier5(application, traceparent, tracestate)
 
         # Send Business Event to Dynatrace (async, non-blocking)
-        asyncio.create_task(send_business_event(application, traceparent))
+        asyncio.create_task(send_business_event(application, traceparent, decision_timestamp))
 
         latency_ms = (datetime.now() - start_time).total_seconds() * 1000
 
@@ -160,7 +161,7 @@ async def evaluate_decision(
         raise HTTPException(status_code=502, detail=f"Failed to forward to Tier 5: {str(e)}")
 
 
-async def send_business_event(application: LoanApplication, traceparent: Optional[str]):
+async def send_business_event(application: LoanApplication, traceparent: Optional[str], decision_timestamp: Optional[str] = None):
     """
     Send Business Event to Dynatrace via Ingest API
     This simulates a SaaS service publishing domain events
@@ -173,7 +174,7 @@ async def send_business_event(application: LoanApplication, traceparent: Optiona
         event_payload = {
             "event.type": "com.loan.decision.made",
             "event.provider": "loan-decision-service",
-            "timestamp": datetime.utcnow().isoformat() + "Z",
+            "timestamp": decision_timestamp or (datetime.utcnow().isoformat() + "Z"),
 
             # Business identifiers
             "loan.applicationId": application.applicationId,
