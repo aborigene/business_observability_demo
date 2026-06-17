@@ -276,6 +276,10 @@ void handle_request(int client_socket) {
                 body_start, tier3Score_str);
     }
     
+    // 100ms delay to align log timestamps with downstream services
+    struct timespec delay = {0, 100000000L};
+    nanosleep(&delay, NULL);
+
     // Forward to Tier 4
     char tier4_response[BUFFER_SIZE];
     int forward_result = forward_to_tier4(updated_json, traceparent, tracestate,
