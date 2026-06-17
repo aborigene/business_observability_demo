@@ -52,9 +52,12 @@ char* find_json_value(const char* json, const char* key) {
 }
 
 void get_timestamp(char* buffer, size_t size) {
-    time_t now = time(NULL);
-    struct tm* t = gmtime(&now);
-    strftime(buffer, size, "%Y-%m-%dT%H:%M:%SZ", t);
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    struct tm* t = gmtime(&ts.tv_sec);
+    char base[32];
+    strftime(base, sizeof(base), "%Y-%m-%dT%H:%M:%S", t);
+    snprintf(buffer, size, "%s.%03ldZ", base, ts.tv_nsec / 1000000L);
 }
 
 void ensure_log_directory() {
@@ -277,7 +280,7 @@ void handle_request(int client_socket) {
     }
     
     // 100ms delay to align log timestamps with downstream services
-    struct timespec delay = {0, 100000000L};
+    struct timespec delay = {1, 0};
     nanosleep(&delay, NULL);
 
     // Forward to Tier 4
