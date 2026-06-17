@@ -26,6 +26,8 @@ app.post('/loan/applications', async (req, res) => {
   const tracestate = req.headers['tracestate'] || '';
   
   try {
+    await new Promise(resolve => setTimeout(resolve, 100));
+
     // Step 1: Validate required fields
     const validation = validateRequest(req.body);
     if (!validation.valid) {

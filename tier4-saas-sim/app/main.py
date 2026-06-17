@@ -89,7 +89,9 @@ async def evaluate_decision(
     x_application_id: Optional[str] = Header(None, alias="x-application-id")
 ):
     start_time = datetime.now()
-    
+
+    await asyncio.sleep(0.1)
+
     logger.info(
         f"Tier 4: Received decision evaluation request - "
         f"applicationId: {application.applicationId}, "

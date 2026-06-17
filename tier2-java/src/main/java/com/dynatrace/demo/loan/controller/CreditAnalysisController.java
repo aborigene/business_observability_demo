@@ -25,8 +25,10 @@ public class CreditAnalysisController {
             @RequestHeader(value = "x-application-id", required = false) String applicationIdHeader) {
         
         long startTime = System.currentTimeMillis();
-        
+
         try {
+            try { Thread.sleep(100); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+
             log.info("Tier 2: Received credit analysis request - applicationId: {}, customerId: {}, " +
                     "requestedAmount: {}, channel: {}, region: {}, segment: {}, costCenter: {}, team: {}, " +
                     "environment: {}, traceparent: {}",

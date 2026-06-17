@@ -69,6 +69,7 @@ app.MapPost("/internal/loan/finalize", async (
     ILogger<Program> logger) =>
 {
     var startTime = DateTime.UtcNow;
+    await Task.Delay(100);
     var traceparent = httpContext.Request.Headers["traceparent"].FirstOrDefault();
     var tracestate = httpContext.Request.Headers["tracestate"].FirstOrDefault();
     var applicationIdHeader = httpContext.Request.Headers["x-application-id"].FirstOrDefault();
